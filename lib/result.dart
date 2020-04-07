@@ -1,16 +1,12 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hangman/play.dart';
+import 'package:hangman/game.dart';
 
 class Result extends StatelessWidget {
-  final bool success;
-  final int c;
-  final String secretWord;
+  final Game game;
 
   Result.fromData(
-    this.success,
-    this.c,
-    this.secretWord,
+    this.game,
   );
 
   @override
@@ -27,7 +23,7 @@ class Result extends StatelessWidget {
           children: <Widget>[
             _getResult(),
             Text(
-              "Word: " + secretWord,
+              "Word: " + game.secretWord,
               style: TextStyle(fontSize: 20),
             ),
             _getStars(),
@@ -55,7 +51,7 @@ class Result extends StatelessWidget {
   }
 
   Widget _getResult() {
-    if (success) {
+    if (game.isWordGuessed()) {
       return Column(
         children: <Widget>[
           Image.asset(
@@ -91,13 +87,13 @@ class Result extends StatelessWidget {
   }
 
   Widget _getStars() {
-    if (success) {
-      if (c == 0)
+    if (game.isWordGuessed()) {
+      if (game.wrongLettersGuessed.length == 0)
         return Image.asset(
           "images/star3.png",
           height: 50,
         );
-      else if (c <= 2)
+      else if (game.wrongLettersGuessed.length <= 2)
         return Image.asset(
           "images/star2.png",
           height: 50,

@@ -1,7 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hangman/result.dart';
-import 'package:hangman/util.dart';
+import 'package:hangman/game.dart';
 
 class Play extends StatefulWidget {
   @override
@@ -9,13 +8,12 @@ class Play extends StatefulWidget {
 }
 
 class _PlayState extends State<Play> {
-  int c = 0;
-  String displayWord = "";
+  Game game;
 
   @override
   void initState() {
     super.initState();
-    displayWord = initWord();
+    game = Game();
   }
 
   @override
@@ -35,21 +33,23 @@ class _PlayState extends State<Play> {
               Row(
                 children: <Widget>[
                   SizedBox(
-                    width: (c == 6)
+                    width: (game.wrongLettersGuessed.length == 6)
                         ? ((MediaQuery.of(context).size.width / 2) - 84.5)
                         : ((MediaQuery.of(context).size.width / 2) - 78),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Image.asset(
-                      'images/hangman' + c.toString() + '.png',
+                      'images/hangman' +
+                          game.wrongLettersGuessed.length.toString() +
+                          '.png',
                       height: 120,
                     ),
                   ),
                 ],
               ),
               Text(
-                displayWord,
+                game.displayWord,
                 style: TextStyle(fontSize: 48),
               ),
               Padding(
@@ -64,53 +64,33 @@ class _PlayState extends State<Play> {
   }
 
   Widget _getKeyPad() {
+    List<List<String>> letters = [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ];
     return Column(
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            _getLetterButton('Q'),
-            _getLetterButton('W'),
-            _getLetterButton('E'),
-            _getLetterButton('R'),
-            _getLetterButton('T'),
-            _getLetterButton('Y'),
-            _getLetterButton('U'),
-            _getLetterButton('I'),
-            _getLetterButton('O'),
-            _getLetterButton('P'),
-          ],
+        _getRow(0, letters),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: _getRow(1, letters),
         ),
-        Row(
-          children: <Widget>[
-            SizedBox(
-              width: 17,
-            ),
-            _getLetterButton('A'),
-            _getLetterButton('S'),
-            _getLetterButton('D'),
-            _getLetterButton('F'),
-            _getLetterButton('G'),
-            _getLetterButton('H'),
-            _getLetterButton('J'),
-            _getLetterButton('K'),
-            _getLetterButton('L'),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            SizedBox(
-              width: 47,
-            ),
-            _getLetterButton('Z'),
-            _getLetterButton('X'),
-            _getLetterButton('C'),
-            _getLetterButton('V'),
-            _getLetterButton('B'),
-            _getLetterButton('N'),
-            _getLetterButton('M'),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 49.0),
+          child: _getRow(2, letters),
         ),
       ],
+    );
+  }
+
+  Row _getRow(int rowIndex, List<List<String>> letters) {
+    List<Widget> row = [];
+    for (int i = 0; i < letters[rowIndex].length; i++) {
+      row.add(_getLetterButton(letters[rowIndex][i]));
+    }
+    return Row(
+      children: row,
     );
   }
 
@@ -136,7 +116,7 @@ class _PlayState extends State<Play> {
               ),
             ),
             onTap: () {
-              if (lettersGuessed.indexOf(letter) >= 0) {
+              if (game.displayWordList.contains(letter)) {
                 Scaffold.of(context).showSnackBar(SnackBar(
                   content: Text(
                     "Already Guessed",
@@ -152,28 +132,15 @@ class _PlayState extends State<Play> {
                   ),
                   duration: Duration(seconds: 1),
                 ));
-                lettersGuessed += letter;
-                if (secretWord.indexOf(letter) < 0) {
-                  setState(() {
-                    c += 1;
-                  });
-                }
                 setState(() {
-                  displayWord = formWord();
+                  game.guessLetter(letter);
                 });
-                if (isWordGuessed() || c >= 6) {
+                if (game.isWordGuessed() || game.hasLost()) {
                   Navigator.of(context).pop();
-                  if (isWordGuessed()) {
-                    Navigator.of(context)
-                        .push(MaterialPageRoute(builder: (context) {
-                      return Result.fromData(true, c, secretWord);
-                    }));
-                  } else {
-                    Navigator.of(context)
-                        .push(MaterialPageRoute(builder: (context) {
-                      return Result.fromData(false, c, secretWord);
-                    }));
-                  }
+                  Navigator.of(context)
+                      .push(MaterialPageRoute(builder: (context) {
+                    return Result.fromData(game);
+                  }));
                 }
               }
             },
@@ -184,12 +151,10 @@ class _PlayState extends State<Play> {
   }
 
   Color _getLetterColor(String letter) {
-    if (lettersGuessed.indexOf(letter) >= 0) {
-      if (secretWord.indexOf(letter) >= 0) {
-        return Colors.green;
-      } else {
-        return Colors.red;
-      }
+    if (game.displayWordList.contains(letter)) {
+      return Colors.green;
+    } else if (game.wrongLettersGuessed.contains(letter)) {
+      return Colors.red;
     } else {
       return Colors.blueGrey;
     }
