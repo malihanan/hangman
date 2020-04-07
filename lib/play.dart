@@ -116,7 +116,8 @@ class _PlayState extends State<Play> {
               ),
             ),
             onTap: () {
-              if (game.displayWordList.contains(letter)) {
+              if (game.displayWordList.contains(letter) ||
+                  game.wrongLettersGuessed.contains(letter)) {
                 Scaffold.of(context).showSnackBar(SnackBar(
                   content: Text(
                     "Already Guessed",
